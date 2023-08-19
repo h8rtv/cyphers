@@ -13,7 +13,7 @@ impl AlgorithmStrategy for Cesar {
         for c in message.chars() {
             if c.is_ascii_alphanumeric() {
                 let before = c as u8;
-                let shifted = (before - b'0' + self.key) % 74;
+                let shifted = (before - b'0' + self.key) % 75;
                 let mut shifted_only_alphanum = shifted;
                 if shifted > (b'9' - b'0') && before <= b'9' {
                     shifted_only_alphanum += b'A' - b'9' - 1;
@@ -36,15 +36,15 @@ impl AlgorithmStrategy for Cesar {
         for c in cypher.chars() {
             if c.is_ascii_alphanumeric() {
                 let before = c as u8;
-                let shifted = (before - b'0' + 74 - self.key) % 74 + 74;
+                let shifted = (before - b'0' + 75 - self.key) % 75 + 75;
                 let mut shifted_only_alphanum = shifted;
-                if shifted < 74 + b'a' - b'0' && before >= b'a' {
-                    shifted_only_alphanum -= b'a' - b'Z' - 1;
+                if shifted < 75 + b'a' - b'0' && before >= b'a' {
+                    shifted_only_alphanum -= b'a' - b'Z'- 1;
                 }
-                if shifted < 74 + b'A' - b'0' && before >= b'A' {
+                if shifted < 75 + b'A' - b'0' && before >= b'A' {
                     shifted_only_alphanum -= b'A' - b'9' - 1;
                 }
-                let decrypted_char = (b'0' + shifted_only_alphanum % 74) as char;
+                let decrypted_char = (b'0' + shifted_only_alphanum % 75) as char;
                 message.push(decrypted_char);
             } else {
                 message.push(c);
@@ -84,7 +84,7 @@ mod tests {
         fn encrypt_lower() {
             let cesar = Cesar { key: 10 };
             let message = String::from("teste");
-            let expected_cypher = String::from("4o34o");
+            let expected_cypher = String::from("3o23o");
             let cypher = cesar
                 .encrypt(&message)
                 .expect("Test message should be alphanumeric");
@@ -116,7 +116,18 @@ mod tests {
         fn encrypt_whitespaces() {
             let cesar = Cesar { key: 10 };
             let message = String::from("12345 TÉÑçá teste");
-            let expected_cypher = String::from("BCDEF dOXmk 4o34o");
+            let expected_cypher = String::from("BCDEF dOXmk 3o23o");
+            let cypher = cesar
+                .encrypt(&message)
+                .expect("Test message should be alphanumeric");
+            assert_eq!(cypher, expected_cypher);
+        }
+
+        #[test]
+        fn encrypt_highend() {
+            let cesar = Cesar { key: 10 };
+            let message = String::from("vwxyz");
+            let expected_cypher = String::from("56789");
             let cypher = cesar
                 .encrypt(&message)
                 .expect("Test message should be alphanumeric");
@@ -149,7 +160,7 @@ mod tests {
         #[test]
         fn decrypt_lower() {
             let cesar = Cesar { key: 10 };
-            let cypher = String::from("4o34o");
+            let cypher = String::from("3o23o");
             let expected_message = String::from("teste");
             let message = cesar
                 .decrypt(&cypher)
@@ -181,8 +192,19 @@ mod tests {
         #[test]
         fn decrypt_whitespaces() {
             let cesar = Cesar { key: 10 };
-            let cypher = String::from("BCDEF dOXmk 4o34o");
+            let cypher = String::from("BCDEF dOXmk 3o23o");
             let expected_message = String::from("12345 TENca teste");
+            let message = cesar
+                .decrypt(&cypher)
+                .expect("Test message should be alphanumeric");
+            assert_eq!(message, expected_message);
+        }
+
+        #[test]
+        fn decrypt_highend() {
+            let cesar = Cesar { key: 10 };
+            let cypher = String::from("56789");
+            let expected_message = String::from("vwxyz");
             let message = cesar
                 .decrypt(&cypher)
                 .expect("Test message should be alphanumeric");

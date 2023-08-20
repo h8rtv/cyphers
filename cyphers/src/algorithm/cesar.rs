@@ -1,28 +1,29 @@
-use super::AlgorithmStrategy;
 use anyhow::Result;
 use deunicode::deunicode;
+
+use super::AlgorithmStrategy;
 
 pub struct Cesar {
     pub key: u8,
 }
+
+pub const ALPHANUM_CHARS: &str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+pub const ALPHANUM_CHARS_LEN: i32 = 62;
 
 impl AlgorithmStrategy for Cesar {
     fn encrypt(&self, message: &str) -> Result<String> {
         let mut cypher = String::new();
         let message = deunicode(message);
         for c in message.chars() {
-            if c.is_ascii_alphanumeric() {
-                let before = c as u8;
-                let shifted = (before - b'0' + self.key) % 75;
-                let mut shifted_only_alphanum = shifted;
-                if shifted > (b'9' - b'0') && before <= b'9' {
-                    shifted_only_alphanum += b'A' - b'9' - 1;
-                }
-                if shifted > (b'Z' - b'0') && before <= b'Z' {
-                    shifted_only_alphanum += b'a' - b'Z' - 1;
-                }
-                let encrypted_char = (b'0' + shifted_only_alphanum) as char;
-                cypher.push(encrypted_char);
+            if let Some(base_char_index) = ALPHANUM_CHARS.find(c) {
+                let cyphered_char_index =
+                    (base_char_index as i32 + self.key as i32) % ALPHANUM_CHARS_LEN as i32;
+                let cyphered_char = ALPHANUM_CHARS
+                    .chars()
+                    .nth(cyphered_char_index as usize)
+                    .expect("the cyphered ascii char should be in the array");
+                cypher.push(cyphered_char);
             } else {
                 cypher.push(c);
             }
@@ -34,18 +35,15 @@ impl AlgorithmStrategy for Cesar {
         let mut message = String::new();
         let cypher = deunicode(cypher);
         for c in cypher.chars() {
-            if c.is_ascii_alphanumeric() {
-                let before = c as u8;
-                let shifted = (before - b'0' + 75 - self.key) % 75 + 75;
-                let mut shifted_only_alphanum = shifted;
-                if shifted < 75 + b'a' - b'0' && before >= b'a' {
-                    shifted_only_alphanum -= b'a' - b'Z'- 1;
-                }
-                if shifted < 75 + b'A' - b'0' && before >= b'A' {
-                    shifted_only_alphanum -= b'A' - b'9' - 1;
-                }
-                let decrypted_char = (b'0' + shifted_only_alphanum % 75) as char;
-                message.push(decrypted_char);
+            if let Some(base_char_index) = ALPHANUM_CHARS.find(c) {
+                let message_char_index = (base_char_index as i32 + ALPHANUM_CHARS_LEN
+                    - (self.key as i32 % ALPHANUM_CHARS_LEN) as i32)
+                    % ALPHANUM_CHARS_LEN as i32;
+                let cyphered_char = ALPHANUM_CHARS
+                    .chars()
+                    .nth(message_char_index as usize)
+                    .expect("the message ascii char should be in the array");
+                message.push(cyphered_char);
             } else {
                 message.push(c);
             }

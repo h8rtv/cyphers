@@ -13,8 +13,12 @@ pub use cesar::Cesar;
 mod vernam;
 pub use vernam::Vernam;
 
+mod cryptanalysis;
+pub use cryptanalysis::Cryptanalysis;
+
 #[enum_dispatch(AlgorithmStrategy)]
 pub enum Algorithm {
     Cesar,
     Vernam,
+    Cryptanalysis,
 }

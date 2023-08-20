@@ -1,24 +1,38 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    #[clap(flatten)]
-    pub mode: GroupMode,
-
-    /// Inform key
-    #[arg(short, long)]
-    pub key: u8,
-
     /// Inform algorithm
-    #[arg(short, long)]
-    pub algorithm: String,
+    #[command(subcommand)]
+    pub algorithm: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    Cesar {
+        /// Inform key
+        #[arg(short, long)]
+        key: u8,
+
+        #[clap(flatten)]
+        mode: GroupMode,
+    },
+    Vernam {
+        /// Inform key file path
+        #[arg(short, long)]
+        key_file: String,
+
+        #[clap(flatten)]
+        mode: GroupMode,
+    },
+    Cryptanalysis,
 }
 
 #[derive(Debug, clap::Args)]
 #[group(required = true, multiple = false)]
 pub struct GroupMode {
-    /// Select cyphre mode
+    /// Select cypher mode
     #[arg(short, long)]
     pub cypher: bool,
 

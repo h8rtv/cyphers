@@ -1,45 +1,56 @@
+use std::iter::zip;
+
 use anyhow::Result;
 use deunicode::deunicode;
-use std::collections::HashMap;
 
 use super::AlgorithmStrategy;
 use super::Cesar;
 
 pub struct Cryptanalysis {
-    pub dict: HashMap<char, f32>,
+    pub dict: Vec<(char, f32)>,
 }
 
-fn portuguese_dict() -> HashMap<char, f32> {
-    let mut letter_freq_map: HashMap<char, f32> = HashMap::new();
+pub const ALPHANUM_CHARS: &str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-    letter_freq_map.insert('A', 14.63);
-    letter_freq_map.insert('B', 1.04);
-    letter_freq_map.insert('C', 3.88);
-    letter_freq_map.insert('D', 4.99);
-    letter_freq_map.insert('E', 12.57);
-    letter_freq_map.insert('F', 1.02);
-    letter_freq_map.insert('G', 1.30);
-    letter_freq_map.insert('H', 1.28);
-    letter_freq_map.insert('I', 6.18);
-    letter_freq_map.insert('J', 0.40);
-    letter_freq_map.insert('K', 0.02);
-    letter_freq_map.insert('L', 2.78);
-    letter_freq_map.insert('M', 4.74);
-    letter_freq_map.insert('N', 5.05);
-    letter_freq_map.insert('O', 10.73);
-    letter_freq_map.insert('P', 2.52);
-    letter_freq_map.insert('Q', 1.20);
-    letter_freq_map.insert('R', 6.53);
-    letter_freq_map.insert('S', 7.81);
-    letter_freq_map.insert('T', 4.34);
-    letter_freq_map.insert('U', 4.63);
-    letter_freq_map.insert('V', 1.67);
-    letter_freq_map.insert('W', 0.01);
-    letter_freq_map.insert('X', 0.21);
-    letter_freq_map.insert('Y', 0.01);
-    letter_freq_map.insert('Z', 0.47);
+pub const ALPHANUM_CHARS_LEN: usize = 62;
 
-    letter_freq_map
+fn portuguese_dict() -> Vec<(char, f32)> {
+    vec![
+        ('a', 0.1463),
+        ('e', 0.1257),
+        ('o', 0.1073),
+        ('r', 0.0653),
+        ('i', 0.0618),
+        ('s', 0.0781),
+        ('n', 0.0505),
+        ('d', 0.0499),
+        ('t', 0.0434),
+        ('u', 0.0463),
+        ('m', 0.0474),
+        ('c', 0.0388),
+        ('l', 0.0278),
+        ('p', 0.0252),
+        ('g', 0.0130),
+        ('h', 0.0128),
+        ('q', 0.0120),
+        ('v', 0.0167),
+        ('f', 0.0102),
+        ('b', 0.0104),
+        ('j', 0.0040),
+        ('z', 0.0047),
+        ('x', 0.0021),
+        ('k', 0.0002),
+        ('w', 0.0001),
+        ('y', 0.0001),
+    ]
+}
+
+fn print_table_of_freqs(freqs: &Vec<(usize, f32)>) {
+    println!("{: <5} | {: <5} | {: <5}", "index", "char", "frequency");
+    for (index, freq) in freqs.iter().filter(|x| x.1 > 0.0) {
+        let c = ALPHANUM_CHARS.chars().nth(*index).unwrap();
+        println!("{:<5} | {:<5} | {:5.2}%", index, c, freq * 100.0);
+    }
 }
 
 impl Cryptanalysis {
@@ -49,10 +60,6 @@ impl Cryptanalysis {
         }
     }
 }
-
-pub const ALPHANUM_CHARS: &str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-pub const ALPHANUM_CHARS_LEN: usize = 62;
 
 impl AlgorithmStrategy for Cryptanalysis {
     fn encrypt(&self, _message: &str) -> Result<String> {
@@ -75,20 +82,24 @@ impl AlgorithmStrategy for Cryptanalysis {
         let mut sorted_freqs: Vec<(usize, f32)> = char_buckets
             .iter()
             .enumerate()
-            .map(|(index, value)| {
-                (
-                    index,
-                    *value as f32 / total_length as f32,
-                )
-            })
+            .map(|(index, value)| (index, *value as f32 / total_length as f32))
             .collect();
 
         sorted_freqs.sort_by(|a, b| b.1.total_cmp(&a.1));
 
-        for (index, freq) in &sorted_freqs {
-            let c = ALPHANUM_CHARS.chars().nth(*index).unwrap();
-            println!("{:2} {:} {:5.2}%", index, c, freq * 100.0);
+        print_table_of_freqs(&sorted_freqs);
+
+        for (sample_data, dict_data) in zip(&sorted_freqs, &self.dict) {
+            let (sample_index, _) = sample_data;
+            let (dict_char, _) = dict_data;
+
+            let c = ALPHANUM_CHARS.chars().nth(*sample_index).unwrap();
+            let c = c.to_ascii_lowercase();
+
+            let diff = (c as i32 - *dict_char as i32).abs();
+            println!("Char dict: {}, Char cypher: {}, Diff: {}", dict_char, c, diff);
         }
+
         let predicted_key = 17;
 
         let predicted_out = Cesar { key: predicted_key }.decrypt(&cypher)?;

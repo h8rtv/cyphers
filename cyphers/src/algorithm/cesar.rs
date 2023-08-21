@@ -2,14 +2,11 @@ use anyhow::Result;
 use deunicode::deunicode;
 
 use super::AlgorithmStrategy;
+use crate::constants::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
 
 pub struct Cesar {
     pub key: u8,
 }
-
-pub const ALPHANUM_CHARS: &str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-pub const ALPHANUM_CHARS_LEN: i32 = 62;
 
 impl AlgorithmStrategy for Cesar {
     fn encrypt(&self, message: &str) -> Result<String> {
@@ -36,8 +33,8 @@ impl AlgorithmStrategy for Cesar {
         let cypher = deunicode(cypher);
         for c in cypher.chars() {
             if let Some(base_char_index) = ALPHANUM_CHARS.find(c) {
-                let message_char_index = (base_char_index as i32 + ALPHANUM_CHARS_LEN
-                    - (self.key as i32 % ALPHANUM_CHARS_LEN) as i32)
+                let message_char_index = (base_char_index as i32 + ALPHANUM_CHARS_LEN as i32
+                    - (self.key as i32 % ALPHANUM_CHARS_LEN as i32) as i32)
                     % ALPHANUM_CHARS_LEN as i32;
                 let cyphered_char = ALPHANUM_CHARS
                     .chars()

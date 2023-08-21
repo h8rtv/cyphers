@@ -3,16 +3,12 @@ use std::iter::zip;
 use anyhow::Result;
 use deunicode::deunicode;
 
-use super::AlgorithmStrategy;
-use super::Cesar;
+use crate::algorithm::{AlgorithmStrategy, Cesar};
+use crate::constants::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
 
 pub struct Cryptanalysis {
-    pub dict: Vec<(char, f32)>,
+    dict: Vec<(char, f32)>,
 }
-
-pub const ALPHANUM_CHARS: &str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-pub const ALPHANUM_CHARS_LEN: usize = 62;
 
 fn portuguese_dict() -> Vec<(char, f32)> {
     vec![
@@ -61,13 +57,8 @@ impl Cryptanalysis {
     }
 }
 
-impl AlgorithmStrategy for Cryptanalysis {
-    fn encrypt(&self, _message: &str) -> Result<String> {
-        // TODO: Repensar código pq isso é palhaçada
-        unreachable!()
-    }
-
-    fn decrypt(&self, cypher: &str) -> Result<String> {
+impl Cryptanalysis {
+    pub fn analyse(&self, cypher: &str) -> Result<String> {
         let mut char_buckets = Vec::with_capacity(ALPHANUM_CHARS_LEN);
         char_buckets.resize(ALPHANUM_CHARS_LEN, 0);
 
@@ -97,7 +88,10 @@ impl AlgorithmStrategy for Cryptanalysis {
             let c = c.to_ascii_lowercase();
 
             let diff = (c as i32 - *dict_char as i32).abs();
-            println!("Char dict: {}, Char cypher: {}, Diff: {}", dict_char, c, diff);
+            println!(
+                "Char dict: {}, Char cypher: {}, Diff: {}",
+                dict_char, c, diff
+            );
         }
 
         let predicted_key = 17;

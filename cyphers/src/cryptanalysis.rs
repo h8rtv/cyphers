@@ -1,5 +1,3 @@
-use deunicode::deunicode;
-
 use crate::utils::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
 
 pub struct Cryptanalysis {
@@ -54,14 +52,13 @@ impl Cryptanalysis {
 }
 
 impl Cryptanalysis {
-    pub fn analyse(&self, cypher: &str) {
+    pub fn analyse(&self, cypher: &[u8]) {
         let mut char_buckets = Vec::with_capacity(ALPHANUM_CHARS_LEN);
         char_buckets.resize(ALPHANUM_CHARS_LEN, 0);
 
-        let cypher = deunicode(cypher);
         let mut total_length = 0;
-        for c in cypher.chars() {
-            if let Some(char_pos) = ALPHANUM_CHARS.find(c) {
+        for c in cypher {
+            if let Some(char_pos) = ALPHANUM_CHARS.find(*c as char) {
                 char_buckets[char_pos] += 1;
                 total_length += 1;
             }
@@ -104,8 +101,8 @@ impl Cryptanalysis {
         let mut sorted_guesses: Vec<_> = guesses.iter().enumerate().filter(|a| *a.1 > 0).collect();
 
         sorted_guesses.sort_by(|a, b| b.1.cmp(&a.1));
-        for (i, count) in sorted_guesses {
-            println!("Guess: {}, Appearances: {}", i, count);
+        for (i, score) in sorted_guesses {
+            println!("Guess: {}, Score: {}", i, score);
         }
     }
 }

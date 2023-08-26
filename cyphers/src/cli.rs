@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -19,9 +19,8 @@ pub enum Commands {
         mode: GroupMode,
     },
     Vernam {
-        /// Inform key file path
-        #[arg(short, long)]
-        key_file: String,
+        #[clap(flatten)]
+        key_group: GroupVernamKey,
 
         #[clap(flatten)]
         mode: GroupMode,
@@ -29,7 +28,7 @@ pub enum Commands {
     Cryptanalysis,
 }
 
-#[derive(Debug, clap::Args)]
+#[derive(Debug, Args)]
 #[group(required = true, multiple = false)]
 pub struct GroupMode {
     /// Select cypher mode
@@ -39,6 +38,18 @@ pub struct GroupMode {
     /// Select decypher mode
     #[arg(short, long)]
     pub decypher: bool,
+}
+
+#[derive(Debug, Args)]
+#[group(required = true, multiple = false)]
+pub struct GroupVernamKey {
+    /// Inform key file path
+    #[arg(short, long)]
+    pub key_file: Option<String>,
+
+    /// Inform name of the output of the key that will be generated
+    #[arg(short, long)]
+    pub out_key_file: Option<String>,
 }
 
 pub fn parse() -> Cli {

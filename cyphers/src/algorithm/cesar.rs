@@ -2,7 +2,7 @@ use anyhow::Result;
 use deunicode::deunicode;
 
 use super::AlgorithmStrategy;
-use crate::constants::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
+use crate::utils::roll;
 
 pub struct Cesar {
     pub key: u8,
@@ -10,40 +10,25 @@ pub struct Cesar {
 
 impl AlgorithmStrategy for Cesar {
     fn encrypt(&self, message: &str) -> Result<String> {
-        let mut cypher = String::new();
+        let mut cypher = String::with_capacity(message.len());
         let message = deunicode(message);
         for c in message.chars() {
-            if let Some(base_char_index) = ALPHANUM_CHARS.find(c) {
-                let cyphered_char_index =
-                    (base_char_index as i32 + self.key as i32) % ALPHANUM_CHARS_LEN as i32;
-                let cyphered_char = ALPHANUM_CHARS
-                    .chars()
-                    .nth(cyphered_char_index as usize)
-                    .expect("the cyphered ascii char should be in the array");
-                cypher.push(cyphered_char);
-            } else {
-                cypher.push(c);
-            }
+            match roll(c, self.key as i32) {
+                Some(encoded_char) => cypher.push(encoded_char),
+                None => cypher.push(c),
+            };
         }
         Ok(cypher)
     }
 
     fn decrypt(&self, cypher: &str) -> Result<String> {
-        let mut message = String::new();
+        let mut message = String::with_capacity(cypher.len());
         let cypher = deunicode(cypher);
         for c in cypher.chars() {
-            if let Some(base_char_index) = ALPHANUM_CHARS.find(c) {
-                let message_char_index = (base_char_index as i32 + ALPHANUM_CHARS_LEN as i32
-                    - (self.key as i32 % ALPHANUM_CHARS_LEN as i32) as i32)
-                    % ALPHANUM_CHARS_LEN as i32;
-                let cyphered_char = ALPHANUM_CHARS
-                    .chars()
-                    .nth(message_char_index as usize)
-                    .expect("the message ascii char should be in the array");
-                message.push(cyphered_char);
-            } else {
-                message.push(c);
-            }
+            match roll(c, self.key as i32 * -1) {
+                Some(decoded_char) => message.push(decoded_char),
+                None => message.push(c),
+            };
         }
         Ok(message)
     }
@@ -200,6 +185,17 @@ mod tests {
             let cesar = Cesar { key: 10 };
             let cypher = String::from("56789");
             let expected_message = String::from("vwxyz");
+            let message = cesar
+                .decrypt(&cypher)
+                .expect("Test message should be alphanumeric");
+            assert_eq!(message, expected_message);
+        }
+
+        #[test]
+        fn a() {
+            let cesar = Cesar { key: 12 };
+            let cypher = String::from("00000");
+            let expected_message = String::from("ooooo");
             let message = cesar
                 .decrypt(&cypher)
                 .expect("Test message should be alphanumeric");

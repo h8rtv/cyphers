@@ -1,10 +1,6 @@
-use std::iter::zip;
-
-use anyhow::Result;
 use deunicode::deunicode;
 
-use crate::algorithm::{AlgorithmStrategy, Cesar};
-use crate::constants::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
+use crate::utils::{ALPHANUM_CHARS, ALPHANUM_CHARS_LEN};
 
 pub struct Cryptanalysis {
     dict: Vec<(char, f32)>,
@@ -58,7 +54,7 @@ impl Cryptanalysis {
 }
 
 impl Cryptanalysis {
-    pub fn analyse(&self, cypher: &str) -> Result<String> {
+    pub fn analyse(&self, cypher: &str) {
         let mut char_buckets = Vec::with_capacity(ALPHANUM_CHARS_LEN);
         char_buckets.resize(ALPHANUM_CHARS_LEN, 0);
 
@@ -80,23 +76,36 @@ impl Cryptanalysis {
 
         print_table_of_freqs(&sorted_freqs);
 
-        for (sample_data, dict_data) in zip(&sorted_freqs, &self.dict) {
+        let mut guesses: Vec<u8> = vec![0; ALPHANUM_CHARS_LEN];
+        for (i, sample_data) in sorted_freqs.iter().take(self.dict.len()).enumerate() {
             let (sample_index, _) = sample_data;
-            let (dict_char, _) = dict_data;
 
             let c = ALPHANUM_CHARS.chars().nth(*sample_index).unwrap();
-            let c = c.to_ascii_lowercase();
 
-            let diff = (c as i32 - *dict_char as i32).abs();
-            println!(
-                "Char dict: {}, Char cypher: {}, Diff: {}",
-                dict_char, c, diff
-            );
+            let start_index = if i > 2 { i - 3 } else { 0 };
+
+            let end_index = std::cmp::min(i + 3, self.dict.len());
+
+            for (j, dict_data) in self.dict[start_index..end_index].iter().enumerate() {
+                let (dict_char, _) = dict_data;
+
+                let dict_index = ALPHANUM_CHARS.find(*dict_char).unwrap();
+
+                let diff = (*sample_index as i32 - dict_index as i32 + ALPHANUM_CHARS_LEN as i32)
+                    % ALPHANUM_CHARS_LEN as i32;
+                guesses[diff as usize] += 1;
+                println!(
+                    "i: {}, Char dict: {}, Char cypher: {}, Diff: {}",
+                    j, dict_char, c, diff
+                );
+            }
+            println!();
         }
+        let mut sorted_guesses: Vec<_> = guesses.iter().enumerate().filter(|a| *a.1 > 0).collect();
 
-        let predicted_key = 17;
-
-        let predicted_out = Cesar { key: predicted_key }.decrypt(&cypher)?;
-        Ok(predicted_out)
+        sorted_guesses.sort_by(|a, b| b.1.cmp(&a.1));
+        for (i, count) in sorted_guesses {
+            println!("Guess: {}, Appearances: {}", i, count);
+        }
     }
 }

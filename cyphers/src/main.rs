@@ -1,13 +1,14 @@
 pub mod algorithm;
 pub mod cli;
-pub mod constants;
 pub mod cryptanalysis;
+pub mod utils;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use std::{fs, io::Read};
 
 use algorithm::{AlgorithmStrategy, Cesar, Vernam};
 use cryptanalysis::Cryptanalysis;
+use utils::generate_vernam_key;
 
 fn main() -> Result<()> {
     let args = cli::parse();
@@ -20,14 +21,22 @@ fn main() -> Result<()> {
             let algorithm = Cesar { key };
             execute_algorithm(algorithm, mode, &input)
         }
-        cli::Commands::Vernam { key_file, mode } => {
-            let key = fs::read(key_file)?;
+        cli::Commands::Vernam { mode, key_group } => {
+            let key = match key_group.key_file {
+                Some(key_file) => Ok(fs::read(key_file)?),
+                None if mode.cypher => Ok(generate_vernam_key(input.trim().len())),
+                None => Err(anyhow!("Can't generate key on decypher mode")),
+            }?;
+            if let Some(out_key) = key_group.out_key_file {
+                fs::write(out_key, &key)?;
+            }
             let algorithm = Vernam { key };
             execute_algorithm(algorithm, mode, &input)
         }
         cli::Commands::Cryptanalysis => {
             let analyser = Cryptanalysis::new();
-            analyser.analyse(input.trim())
+            analyser.analyse(input.trim());
+            Ok(String::new())
         }
     }?;
 

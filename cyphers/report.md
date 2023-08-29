@@ -30,5 +30,8 @@ deverá gerar uma nova chave e cifrar todo o banco novamente.
 
 ## O algoritmo RC4 é vulnerável à análise de frequências? Justifique.
 
-Não.
+Não. Assim como o Vernam, a saída do algoritmo é embaralhada de forma que não há
+uma distribuição das frequências dos bytes que possa ser analisado e que um possível
+ataque possa tomar uma decisão informada com base na cifra como ocorre na cifra
+de cesar.
 

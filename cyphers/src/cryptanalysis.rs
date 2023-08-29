@@ -43,6 +43,13 @@ fn print_table_of_freqs(freqs: &Vec<(usize, f32)>) {
     }
 }
 
+fn print_table_of_freqs_unbounded(freqs: &Vec<(usize, f32)>) {
+    println!("{: <5} | {: <5}", "index", "frequency");
+    for (index, freq) in freqs.iter().filter(|x| x.1 > 0.0) {
+        println!("{:<5} | {:5.2}%", index, freq * 100.0);
+    }
+}
+
 impl Cryptanalysis {
     pub fn new() -> Self {
         Cryptanalysis {
@@ -53,7 +60,7 @@ impl Cryptanalysis {
 
 impl Cryptanalysis {
     pub fn analyse(&self, cypher: &[u8]) {
-        let mut char_buckets = Vec::with_capacity(ALPHANUM_CHARS_LEN);
+        let mut char_buckets = vec![0; ALPHANUM_CHARS_LEN];
         char_buckets.resize(ALPHANUM_CHARS_LEN, 0);
 
         let mut total_length = 0;
@@ -72,6 +79,21 @@ impl Cryptanalysis {
         sorted_freqs.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         print_table_of_freqs(&sorted_freqs);
+
+        let mut char_buckets_unbounded = vec![0; 256];
+        let mut total_length = 0;
+        for c in cypher {
+            char_buckets_unbounded[*c as usize] += 1;
+            total_length += 1;
+        }
+        let mut sorted_freqs_unbounded: Vec<(usize, f32)> = char_buckets_unbounded
+            .iter()
+            .enumerate()
+            .map(|(index, value)| (index, *value as f32 / total_length as f32))
+            .collect();
+
+        sorted_freqs_unbounded.sort_by(|a, b| b.1.total_cmp(&a.1));
+        print_table_of_freqs_unbounded(&sorted_freqs_unbounded);
 
         let mut guesses: Vec<u8> = vec![0; ALPHANUM_CHARS_LEN];
         for (i, sample_data) in sorted_freqs.iter().take(self.dict.len()).enumerate() {
